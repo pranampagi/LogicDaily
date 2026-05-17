@@ -1,0 +1,26 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+*.db
+*.db-journal
+
+# Node / Vue
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Instructions (Ignore from Git)
+/LogicDaily.md
+.env
+.env.*
+!.env.example
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store
