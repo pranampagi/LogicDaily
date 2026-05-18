@@ -1,6 +1,12 @@
 import os
+import random
+import datetime
 import logging
-from fastapi import APIRouter, Header, HTTPException, status
+from fastapi import APIRouter, Header, HTTPException, status, BackgroundTasks
+from database import SessionLocal
+from cache import cache
+import models
+import schemas
 
 logger = logging.getLogger("LogicDailyCron")
 
@@ -9,8 +15,62 @@ router = APIRouter(
     tags=["Cron Jobs"]
 )
 
+def rotate_daily_challenge():
+    """
+    Selects a new active daily challenge, marks the old one inactive, 
+    and flushes/updates the cache. Runs asynchronously in a background worker.
+    """
+    logger.info("Starting daily challenge rotation background task...")
+    db = SessionLocal()
+    try:
+        # 1. Fetch current active question
+        current_active = db.query(models.Question).filter(models.Question.is_active == True).first()
+
+        # 2. Query for candidate questions (excluding current active one to guarantee a change)
+        query = db.query(models.Question)
+        if current_active:
+            query = query.filter(models.Question.id != current_active.id)
+        
+        candidates = query.all()
+        
+        if not candidates:
+            # If no alternative questions exist
+            if current_active:
+                logger.info("No alternative candidates found. Keeping current challenge active.")
+                return
+            else:
+                logger.warning("No questions found in database to rotate.")
+                return
+        
+        # 3. Pick a random candidate
+        next_active = random.choice(candidates)
+
+        # 4. Perform DB updates in transaction
+        if current_active:
+            current_active.is_active = False
+            # We don't delete, we just toggle is_active = False
+        
+        next_active.is_active = True
+        next_active.activated_at = datetime.datetime.utcnow()
+        db.commit()
+        db.refresh(next_active)
+        logger.info(f"Successfully rotated daily question to ID {next_active.id}: '{next_active.title}'")
+
+        # 5. Invalidate old cache and pre-warm with the new challenge
+        cache.delete("daily_question")
+        q_response = schemas.QuestionResponse.model_validate(next_active)
+        cache.set("daily_question", q_response.model_dump_json(), expire_seconds=86400)
+        logger.info("Daily question cache successfully pre-warmed.")
+
+    except Exception as e:
+        logger.error(f"Error during daily challenge rotation: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+
 @router.post("/rotate")
-def trigger_rotation(authorization: str = Header(default=None)):
+def trigger_rotation(background_tasks: BackgroundTasks, authorization: str = Header(default=None)):
     """
     Trigger daily question rotation.
     Protected by checking the Authorization Bearer token header.
@@ -26,8 +86,10 @@ def trigger_rotation(authorization: str = Header(default=None)):
             detail="Unauthorized: Invalid or missing Cron token."
         )
 
-    logger.info("Cron key verification successful.")
+    logger.info("Cron key verification successful. Queuing rotation task.")
+    background_tasks.add_task(rotate_daily_challenge)
+    
     return {
-        "status": "authorized",
-        "message": "Cron authorization successful. Ready for daily question rotation logic."
+        "status": "success",
+        "message": "Daily challenge rotation triggered in background."
     }
