@@ -2,9 +2,9 @@ import os
 import random
 import datetime
 import logging
-from fastapi import APIRouter, Header, HTTPException, status, BackgroundTasks
+from fastapi import APIRouter, Header, HTTPException, status, BackgroundTasks, Depends
 from database import SessionLocal
-from cache import cache
+from cache import get_cache
 import models
 import schemas
 
@@ -15,7 +15,7 @@ router = APIRouter(
     tags=["Cron Jobs"]
 )
 
-def rotate_daily_challenge():
+def rotate_daily_challenge(cache_client):
     """
     Selects a new active daily challenge, marks the old one inactive, 
     and flushes/updates the cache. Runs asynchronously in a background worker.
@@ -57,9 +57,9 @@ def rotate_daily_challenge():
         logger.info(f"Successfully rotated daily question to ID {next_active.id}: '{next_active.title}'")
 
         # 5. Invalidate old cache and pre-warm with the new challenge
-        cache.delete("daily_question")
+        cache_client.delete("daily_question")
         q_response = schemas.QuestionResponse.model_validate(next_active)
-        cache.set("daily_question", q_response.model_dump_json(), expire_seconds=86400)
+        cache_client.set("daily_question", q_response.model_dump_json(), expire_seconds=86400)
         logger.info("Daily question cache successfully pre-warmed.")
 
     except Exception as e:
@@ -70,7 +70,11 @@ def rotate_daily_challenge():
 
 
 @router.post("/rotate")
-def trigger_rotation(background_tasks: BackgroundTasks, authorization: str = Header(default=None)):
+def trigger_rotation(
+    background_tasks: BackgroundTasks, 
+    authorization: str = Header(default=None),
+    cache_client = Depends(get_cache)
+):
     """
     Trigger daily question rotation.
     Protected by checking the Authorization Bearer token header.
@@ -87,7 +91,7 @@ def trigger_rotation(background_tasks: BackgroundTasks, authorization: str = Hea
         )
 
     logger.info("Cron key verification successful. Queuing rotation task.")
-    background_tasks.add_task(rotate_daily_challenge)
+    background_tasks.add_task(rotate_daily_challenge, cache_client)
     
     return {
         "status": "success",

@@ -105,3 +105,10 @@ def get_cache_client():
 
 # Singleton cache instance for simple application-wide access
 cache = get_cache_client()
+
+def get_cache():
+    """
+    FastAPI dependency injection provider for the cache client.
+    Allows clean mocking and overriding in test environments.
+    """
+    return cache

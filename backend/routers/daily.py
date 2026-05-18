@@ -4,7 +4,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
-from cache import cache
+from cache import get_cache
 import models
 import schemas
 
@@ -16,14 +16,14 @@ router = APIRouter(
 )
 
 @router.get("", response_model=schemas.QuestionResponse)
-def get_daily_question(db: Session = Depends(get_db)):
+def get_daily_question(db: Session = Depends(get_db), cache_client = Depends(get_cache)):
     """
     Retrieve the active daily question.
     Checks the Redis/in-memory cache first for high performance.
     Falls back to querying the database, then populates the cache.
     """
     # 1. Try to retrieve from cache
-    cached_q = cache.get("daily_question")
+    cached_q = cache_client.get("daily_question")
     if cached_q:
         try:
             logger.info("Serving daily question from cache")
@@ -56,7 +56,7 @@ def get_daily_question(db: Session = Depends(get_db)):
     # 4. Serialize to Pydantic and populate the cache (cache for 24 hours)
     try:
         q_response = schemas.QuestionResponse.model_validate(db_question)
-        cache.set("daily_question", q_response.model_dump_json(), expire_seconds=86400)
+        cache_client.set("daily_question", q_response.model_dump_json(), expire_seconds=86400)
     except Exception as e:
         logger.warning(f"Failed to write daily question to cache: {e}")
 
