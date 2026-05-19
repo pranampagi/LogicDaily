@@ -1,3 +1,9 @@
+<script>
+export default {
+  name: 'NavBar'
+}
+</script>
+
 <template>
   <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
     <div class="container">
@@ -25,12 +31,6 @@
     </div>
   </nav>
 </template>
-
-<script>
-export default {
-  name: 'NavBar'
-}
-</script>
 
 <style scoped>
 .navbar-brand {

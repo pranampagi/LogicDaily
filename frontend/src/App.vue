@@ -1,3 +1,16 @@
+<script>
+import NavBar from './components/NavBar.vue'
+import FooterBar from './components/FooterBar.vue'
+
+export default {
+  name: 'App',
+  components: {
+    NavBar,
+    FooterBar
+  }
+}
+</script>
+
 <template>
   <div class="d-flex flex-column min-vh-100 bg-light">
     <NavBar />
@@ -13,19 +26,6 @@
     <FooterBar />
   </div>
 </template>
-
-<script>
-import NavBar from './components/NavBar.vue'
-import FooterBar from './components/FooterBar.vue'
-
-export default {
-  name: 'App',
-  components: {
-    NavBar,
-    FooterBar
-  }
-}
-</script>
 
 <style>
 /* Base application typography and smoothing */

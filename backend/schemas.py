@@ -58,6 +58,7 @@ class QuestionUpdate(BaseModel):
 class QuestionResponse(QuestionBase):
     id: int
     is_active: bool
+    correct_answer: str
     activated_at: Optional[datetime] = None
     created_at: datetime
 
