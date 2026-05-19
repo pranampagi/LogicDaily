@@ -1,26 +1,40 @@
 <script>
-import { dailyService } from '../services/api'
+import { useMainStore } from '../stores/main'
 
 export default {
   name: 'HomeView',
   data() {
     return {
-      loading: true,
-      error: null,
-      question: null,
       selectedAnswer: null,
       hasSubmitted: false,
       isCorrect: false
     }
   },
+  computed: {
+    // Access Pinia store instances
+    mainStore() {
+      return useMainStore()
+    },
+    question() {
+      return this.mainStore.dailyQuestion
+    },
+    loading() {
+      return this.mainStore.dailyLoading
+    },
+    error() {
+      return this.mainStore.dailyError
+    }
+  },
   async created() {
-    try {
-      this.question = await dailyService.getDailyQuestion()
-    } catch (err) {
-      console.error('Failed to fetch daily question:', err)
-      this.error = "Failed to load today's challenge. Please ensure the API is running."
-    } finally {
-      this.loading = false
+    // 1. Fetch the daily question from backend via the store
+    await this.mainStore.fetchDailyQuestion()
+    
+    // 2. Check if the user has already answered this question in the current session/localStorage
+    if (this.question && this.mainStore.hasSubmittedToday) {
+      const submission = this.mainStore.currentSubmission
+      this.selectedAnswer = submission.selectedAnswer
+      this.hasSubmitted = true
+      this.isCorrect = submission.isCorrect
     }
   },
   methods: {
@@ -30,16 +44,23 @@ export default {
       }
     },
     submitAnswer() {
-      if (!this.selectedAnswer) return;
+      if (!this.selectedAnswer || !this.question) return
       
-      this.hasSubmitted = true;
-      this.isCorrect = (this.selectedAnswer === this.question.correct_answer);
+      this.hasSubmitted = true
+      this.isCorrect = (this.selectedAnswer === this.question.correct_answer)
       
-      // Note: In Commit 18, we will actually POST this to the backend
-      // API to securely evaluate and record the submission.
+      // Save submission status in central state (which auto-persists to localStorage)
+      this.mainStore.recordSubmission(
+        this.question.id, 
+        this.selectedAnswer, 
+        this.isCorrect
+      )
+      
+      // Note: In Commit 18, we will also post to the backend API
     }
   }
 }
+
 </script>
 
 <template>
