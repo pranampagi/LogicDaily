@@ -1,42 +1,39 @@
 <template>
-  <div id="app-layout">
-    <header class="navbar-wrapper">
-      <nav class="navigation-links">
-        <router-link to="/">Home</router-link> |
-        <router-link to="/leaderboard">Leaderboard</router-link> |
-        <router-link to="/admin">Admin</router-link>
-      </nav>
-    </header>
-    <main>
+  <div class="d-flex flex-column min-vh-100 bg-light">
+    <NavBar />
+    
+    <main class="flex-grow-1">
+      <!-- 
+        router-view is dynamically replaced by the routed component 
+        (e.g., HomeView, LeaderboardView, AdminView)
+      -->
       <router-view />
     </main>
+    
+    <FooterBar />
   </div>
 </template>
 
 <script>
+import NavBar from './components/NavBar.vue'
+import FooterBar from './components/FooterBar.vue'
+
 export default {
-  name: 'App'
+  name: 'App',
+  components: {
+    NavBar,
+    FooterBar
+  }
 }
 </script>
 
 <style>
-/* Simple styling for validation; will be upgraded to beautiful Bootstrap next */
-#app-layout {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 20px;
+/* Base application typography and smoothing */
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
-.navigation-links {
-  padding: 15px;
-}
-.navigation-links a {
-  font-weight: bold;
-  color: #2c3e50;
-  text-decoration: none;
-  margin: 0 10px;
-}
-.navigation-links a.router-link-exact-active {
-  color: #42b983;
-}
+
+/* Page transition animations can be added here later */
 </style>
