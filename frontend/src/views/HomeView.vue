@@ -14,7 +14,8 @@ export default {
         password: ''
       },
       localSelectedAnswer: null,
-      submitLoading: false
+      submitLoading: false,
+      submitError: null
     }
   },
   computed: {
@@ -81,16 +82,18 @@ export default {
     selectAnswer(option) {
       if (!this.hasSubmitted) {
         this.localSelectedAnswer = option
+        this.submitError = null
       }
     },
     async submitAnswer() {
       if (!this.selectedAnswer || !this.question) return
       
       this.submitLoading = true
+      this.submitError = null
       try {
         await this.mainStore.submitChallenge(this.question.id, this.selectedAnswer)
       } catch (err) {
-        this.authError = err.response?.data?.detail || 'Failed to submit answer.'
+        this.submitError = err.response?.data?.detail || 'Failed to submit answer. Please try again.'
       } finally {
         this.submitLoading = false
       }
@@ -172,7 +175,10 @@ export default {
       <div v-else-if="error" class="alert alert-danger shadow-sm border-0 rounded-4 p-4 text-center">
         <i class="bi bi-exclamation-triangle-fill fs-1 text-danger mb-3 d-block"></i>
         <h4 class="alert-heading fw-bold">Oops!</h4>
-        <p class="mb-0 fs-5">{{ error }}</p>
+        <p class="mb-3 fs-5">{{ error }}</p>
+        <button class="btn btn-outline-danger rounded-pill px-4 fw-bold shadow-sm" @click="mainStore.fetchDailyQuestion(true)">
+          <i class="bi bi-arrow-clockwise me-1"></i> Retry
+        </button>
       </div>
 
       <!-- Challenge UI -->
@@ -231,8 +237,14 @@ export default {
             </button>
           </div>
           
+          <!-- Submission Error Alert -->
+          <div v-if="submitError" class="alert alert-danger border-0 rounded-4 mt-4 d-flex align-items-center justify-content-center shadow-sm">
+            <i class="bi bi-exclamation-circle-fill me-2 fs-5"></i>
+            <div class="fw-medium">{{ submitError }}</div>
+          </div>
+          
           <!-- Submit Action -->
-          <div class="mt-5 text-center" v-if="!hasSubmitted">
+          <div class="mt-4 text-center" v-if="!hasSubmitted">
             <button 
               class="btn btn-primary btn-lg px-5 py-3 rounded-pill shadow fw-bold text-uppercase letter-spacing-1 submit-btn" 
               :disabled="!selectedAnswer || submitLoading"

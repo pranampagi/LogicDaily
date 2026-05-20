@@ -3,6 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
+from cache import get_cache
 import models
 import schemas
 
@@ -87,7 +88,11 @@ def update_question(question_id: int, question_update: schemas.QuestionUpdate, d
 
 
 @router.delete("/{question_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_question(question_id: int, db: Session = Depends(get_db)):
+def delete_question(
+    question_id: int, 
+    db: Session = Depends(get_db),
+    cache_client = Depends(get_cache)
+):
     """
     Delete a question.
     """
@@ -99,4 +104,12 @@ def delete_question(question_id: int, db: Session = Depends(get_db)):
         )
     db.delete(db_question)
     db.commit()
+
+    # Invalidate caches
+    try:
+        cache_client.delete("leaderboard")
+        cache_client.delete("daily_question")
+    except Exception:
+        pass
+
     return None

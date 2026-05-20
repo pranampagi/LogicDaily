@@ -46,7 +46,7 @@ export default {
       <!-- Card Header -->
       <div class="card-header bg-primary text-white py-4 px-4 border-0 d-flex align-items-center justify-content-between">
         <div>
-          <h2 class="fw-bold mb-0"><i class="bi bi-trophy-fill me-2 text-warning animate-bounce"></i>Global Leaderboard</h2>
+          <h2 class="fw-bold mb-0 text-white"><i class="bi bi-trophy-fill me-2 text-warning animate-bounce"></i>Global Leaderboard</h2>
           <small class="opacity-75">Top performers ranked by correct daily answers</small>
         </div>
         <button class="btn btn-outline-light btn-sm rounded-pill px-3" @click="fetchLeaderboard" :disabled="loading">
@@ -67,7 +67,10 @@ export default {
         <!-- Error State -->
         <div v-else-if="error" class="alert alert-danger shadow-sm border-0 rounded-3 p-4 text-center">
           <i class="bi bi-exclamation-triangle-fill fs-3 text-danger mb-2 d-block"></i>
-          <p class="mb-0 fw-medium">{{ error }}</p>
+          <p class="mb-3 fw-medium">{{ error }}</p>
+          <button class="btn btn-outline-danger btn-sm rounded-pill px-4 fw-bold shadow-sm" @click="fetchLeaderboard">
+            <i class="bi bi-arrow-clockwise me-1"></i> Try Again
+          </button>
         </div>
 
         <!-- Leaderboard Table -->

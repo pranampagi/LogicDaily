@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Header, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case
+from sqlalchemy.exc import SQLAlchemyError
 from database import get_db
 from cache import get_cache
 import models
@@ -106,6 +107,37 @@ def get_leaderboard(
     Get the global leaderboard ranking users by correct submissions and accuracy.
     Cached for 1 hour.
     """
+    # 0. Check if physical SQLite database file exists on disk (if using SQLite)
+    from database import DATABASE_URL
+    import os
+    if DATABASE_URL.startswith("sqlite:///"):
+        db_path = DATABASE_URL.replace("sqlite:///", "")
+        if not os.path.exists(db_path):
+            try:
+                cache_client.delete("leaderboard")
+            except Exception as e:
+                logger.warning(f"Failed to clear empty leaderboard cache: {e}")
+            return []
+
+    # 0.5. Check if database has any submissions at all
+    try:
+        if db.query(models.Submission).count() == 0:
+            # If database is empty, invalidate cache and return empty leaderboard
+            try:
+                cache_client.delete("leaderboard")
+            except Exception as e:
+                logger.warning(f"Failed to clear empty leaderboard cache: {e}")
+            return []
+    except SQLAlchemyError as e:
+        logger.warning(f"Database query failed, tables might be missing: {e}. Re-creating tables dynamically...")
+        try:
+            from database import Base, engine
+            Base.metadata.create_all(bind=engine)
+            cache_client.delete("leaderboard")
+        except Exception as ce:
+            logger.error(f"Failed to dynamically re-create database tables: {ce}")
+        return []
+
     # 1. Try cache
     cached_data = cache_client.get("leaderboard")
     if cached_data:

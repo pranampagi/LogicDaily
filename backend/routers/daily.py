@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session
 from database import get_db
 from cache import get_cache
+from sqlalchemy.exc import SQLAlchemyError
 import models
 import schemas
 
@@ -22,6 +23,22 @@ def get_daily_question(response: Response, db: Session = Depends(get_db), cache_
     Checks the Redis/in-memory cache first for high performance.
     Falls back to querying the database, then populates the cache.
     """
+    # 0. Check if physical SQLite database file exists on disk (if using SQLite)
+    from database import DATABASE_URL
+    import os
+    if DATABASE_URL.startswith("sqlite:///"):
+        db_path = DATABASE_URL.replace("sqlite:///", "")
+        if not os.path.exists(db_path):
+            try:
+                cache_client.delete("daily_question")
+                cache_client.delete("leaderboard")
+            except Exception as e:
+                logger.warning(f"Failed to clear daily question cache: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No questions available in the database. Please create a question first."
+            )
+
     # 1. Try to retrieve from cache
     cached_q = cache_client.get("daily_question")
     if cached_q:
@@ -37,7 +54,21 @@ def get_daily_question(response: Response, db: Session = Depends(get_db), cache_
 
 
     # 2. Query the database for the active question
-    db_question = db.query(models.Question).filter(models.Question.is_active == True).first()
+    try:
+        db_question = db.query(models.Question).filter(models.Question.is_active == True).first()
+    except SQLAlchemyError as e:
+        logger.warning(f"Database query failed, tables might be missing: {e}. Re-creating tables dynamically...")
+        try:
+            from database import Base, engine
+            Base.metadata.create_all(bind=engine)
+            cache_client.delete("daily_question")
+            cache_client.delete("leaderboard")
+        except Exception as ce:
+            logger.error(f"Failed to dynamically re-create database tables: {ce}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No questions available in the database. Please create a question first."
+        )
     
     # 3. Fallback: If no question is set as active, pick the newest question and make it active
     if not db_question:

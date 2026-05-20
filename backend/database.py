@@ -3,7 +3,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 # Default to local SQLite database, extensible to PostgreSQL via env vars later
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./logicdaily.db")
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    backend_dir = os.path.dirname(os.path.abspath(__file__))
+    DATABASE_URL = f"sqlite:///{os.path.join(backend_dir, 'logicdaily.db')}"
 
 # Connect arguments needed for SQLite multi-thread handling
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
