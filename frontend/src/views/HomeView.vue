@@ -86,9 +86,17 @@ export default {
       <!-- Card Header -->
       <div class="card-header bg-primary text-white py-3 px-4 border-0">
         <div class="d-flex justify-content-between align-items-center">
-          <span class="badge bg-white text-primary rounded-pill px-3 py-2 text-uppercase fw-bold letter-spacing-1">
-            {{ question.category }}
-          </span>
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-white text-primary rounded-pill px-3 py-2 text-uppercase fw-bold letter-spacing-1">
+              {{ question.category }}
+            </span>
+            <span v-if="question.fromCache" class="badge bg-info text-white rounded-pill px-2 py-1 fw-bold fs-7" title="Served directly from high-performance cache">
+              <i class="bi bi-lightning-charge-fill"></i> Cached
+            </span>
+            <span v-else class="badge bg-warning text-dark rounded-pill px-2 py-1 fw-bold fs-7" title="Fetched from database">
+              <i class="bi bi-database-fill"></i> DB Load
+            </span>
+          </div>
           <span class="opacity-75 fw-semibold">
             <i class="bi bi-calendar2-check me-2"></i>Daily Challenge
           </span>

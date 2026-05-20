@@ -1,7 +1,7 @@
 import json
 import datetime
 import logging
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.orm import Session
 from database import get_db
 from cache import get_cache
@@ -16,7 +16,7 @@ router = APIRouter(
 )
 
 @router.get("", response_model=schemas.QuestionResponse)
-def get_daily_question(db: Session = Depends(get_db), cache_client = Depends(get_cache)):
+def get_daily_question(response: Response, db: Session = Depends(get_db), cache_client = Depends(get_cache)):
     """
     Retrieve the active daily question.
     Checks the Redis/in-memory cache first for high performance.
@@ -27,11 +27,14 @@ def get_daily_question(db: Session = Depends(get_db), cache_client = Depends(get
     if cached_q:
         try:
             logger.info("Serving daily question from cache")
+            response.headers["X-Cache"] = "HIT"
             return json.loads(cached_q)
         except Exception as e:
             logger.warning(f"Failed to parse cached daily question: {e}. Re-querying database.")
 
     logger.info("Cache miss. Fetching daily question from database")
+    response.headers["X-Cache"] = "MISS"
+
 
     # 2. Query the database for the active question
     db_question = db.query(models.Question).filter(models.Question.is_active == True).first()

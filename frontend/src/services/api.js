@@ -32,7 +32,12 @@ export const questionService = {
 // Service layer for the daily challenge endpoints
 export const dailyService = {
   getDailyQuestion() {
-    return apiClient.get('/api/daily').then(response => response.data)
+    return apiClient.get('/api/daily').then(response => {
+      return {
+        ...response.data,
+        fromCache: response.headers['x-cache'] === 'HIT'
+      }
+    })
   }
 }
 
