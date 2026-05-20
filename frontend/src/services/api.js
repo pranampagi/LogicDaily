@@ -63,6 +63,9 @@ export const submissionService = {
     return apiClient.get(`/api/submissions/status/${questionId}`, {
       headers: { 'X-User-ID': userId }
     }).then(response => response.data)
+  },
+  getLeaderboard() {
+    return apiClient.get('/api/submissions/leaderboard').then(response => response.data)
   }
 }
 
