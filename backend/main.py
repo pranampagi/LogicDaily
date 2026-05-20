@@ -8,7 +8,7 @@ if backend_path not in sys.path:
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import questions, daily, cron
+from routers import questions, daily, cron, users, submissions
 from database import Base, engine
 import models
 
@@ -31,6 +31,8 @@ app.add_middleware(
 app.include_router(questions.router)
 app.include_router(daily.router)
 app.include_router(cron.router)
+app.include_router(users.router)
+app.include_router(submissions.router)
 
 @app.get("/api/health")
 def health_check():

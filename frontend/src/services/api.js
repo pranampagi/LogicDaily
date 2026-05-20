@@ -41,4 +41,29 @@ export const dailyService = {
   }
 }
 
+// Service layer for user registration and authentication
+export const userService = {
+  register(userData) {
+    return apiClient.post('/api/users/register', userData).then(response => response.data)
+  },
+  login(credentials) {
+    return apiClient.post('/api/users/login', credentials).then(response => response.data)
+  }
+}
+
+// Service layer for challenge submissions
+export const submissionService = {
+  submit(questionId, submittedAnswer, userId) {
+    return apiClient.post('/api/submissions', 
+      { question_id: questionId, submitted_answer: submittedAnswer },
+      { headers: { 'X-User-ID': userId } }
+    ).then(response => response.data)
+  },
+  getSubmissionStatus(questionId, userId) {
+    return apiClient.get(`/api/submissions/status/${questionId}`, {
+      headers: { 'X-User-ID': userId }
+    }).then(response => response.data)
+  }
+}
+
 export default apiClient
