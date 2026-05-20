@@ -22,14 +22,8 @@ export default {
         this.leaderboard = data
       } catch (err) {
         console.error('Failed to fetch leaderboard:', err)
-        // Fallback to mock data for Commit 19 verification in case backend is not ready
-        this.error = null
-        this.leaderboard = [
-          { username: 'alex', score: 5, accuracy: 100 },
-          { username: 'bob', score: 3, accuracy: 60.5 },
-          { username: 'suarez', score: 2, accuracy: 100 },
-          { username: 'guest_thinker', score: 1, accuracy: 50 }
-        ]
+        this.error = 'Failed to load leaderboard data. Please try again later.'
+        this.leaderboard = []
       } finally {
         this.loading = false
       }

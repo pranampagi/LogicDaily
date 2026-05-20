@@ -1,8 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status, Header, Response
 from sqlalchemy.orm import Session
+from sqlalchemy import func, case
 from database import get_db
+from cache import get_cache
 import models
 import schemas
+import json
+import logging
+
+logger = logging.getLogger("LogicDailyAPI")
 
 router = APIRouter(
     prefix="/api/submissions",
@@ -13,7 +19,8 @@ router = APIRouter(
 def create_submission(
     submission: schemas.SubmissionCreate,
     x_user_id: int = Header(..., alias="X-User-ID"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    cache_client = Depends(get_cache)
 ):
     # 1. Verify User exists
     user = db.query(models.User).filter(models.User.id == x_user_id).first()
@@ -56,6 +63,14 @@ def create_submission(
     db.add(db_submission)
     db.commit()
     db.refresh(db_submission)
+
+    # Invalidate leaderboard cache
+    try:
+        cache_client.delete("leaderboard")
+        logger.info("Leaderboard cache invalidated due to new submission")
+    except Exception as e:
+        logger.warning(f"Failed to invalidate leaderboard cache: {e}")
+
     return db_submission
 
 @router.get("/status/{question_id}")
@@ -80,3 +95,58 @@ def get_submission_status(
         "selected_answer": None,
         "is_correct": False
     }
+
+@router.get("/leaderboard")
+def get_leaderboard(
+    response: Response,
+    db: Session = Depends(get_db),
+    cache_client = Depends(get_cache)
+):
+    """
+    Get the global leaderboard ranking users by correct submissions and accuracy.
+    Cached for 1 hour.
+    """
+    # 1. Try cache
+    cached_data = cache_client.get("leaderboard")
+    if cached_data:
+        try:
+            logger.info("Serving leaderboard from cache")
+            response.headers["X-Cache"] = "HIT"
+            return json.loads(cached_data)
+        except Exception as e:
+            logger.warning(f"Failed to parse cached leaderboard: {e}")
+            
+    response.headers["X-Cache"] = "MISS"
+    logger.info("Leaderboard cache miss. Calculating from database...")
+    
+    # 2. Query stats
+    results = db.query(
+        models.User.username,
+        func.count(models.Submission.id).label("total_submissions"),
+        func.sum(case((models.Submission.is_correct == True, 1), else_=0)).label("correct_submissions")
+    ).join(
+        models.Submission, models.User.id == models.Submission.user_id
+    ).group_by(
+        models.User.id, models.User.username
+    ).all()
+    
+    leaderboard_data = []
+    for username, total, correct in results:
+        score = correct
+        accuracy = (correct / total * 100.0) if total > 0 else 0.0
+        leaderboard_data.append({
+            "username": username,
+            "score": score,
+            "accuracy": accuracy
+        })
+        
+    # Sort: score desc, accuracy desc, username asc
+    leaderboard_data.sort(key=lambda x: (-x["score"], -x["accuracy"], x["username"]))
+    
+    # 3. Cache results for 1 hour (3600 seconds)
+    try:
+        cache_client.set("leaderboard", json.dumps(leaderboard_data), expire_seconds=3600)
+    except Exception as e:
+        logger.warning(f"Failed to cache leaderboard: {e}")
+        
+    return leaderboard_data
