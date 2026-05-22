@@ -77,3 +77,21 @@ def test_cron_rotation_success(client, db_session):
     # Retrieve daily question: should rotate to Question 1
     daily_res_new = client.get("/api/daily").json()
     assert daily_res_new["title"] == "Question 1"
+
+def test_cron_rotation_get_success(client):
+    # Setup questions
+    client.post("/api/questions", json={
+        "category": "logical",
+        "title": "Question 3",
+        "content": "C3",
+        "options": ["C"],
+        "correct_answer": "C"
+    })
+    
+    # Trigger rotation with GET
+    rotate_res = client.get(
+        "/api/cron/rotate",
+        headers={"Authorization": "Bearer dev_cron_key"}
+    )
+    assert rotate_res.status_code == 200
+    assert rotate_res.json()["status"] == "success"

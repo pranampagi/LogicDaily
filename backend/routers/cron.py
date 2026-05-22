@@ -71,6 +71,7 @@ def rotate_daily_challenge(cache_client):
 
 
 @router.post("/rotate")
+@router.get("/rotate")
 def trigger_rotation(
     background_tasks: BackgroundTasks, 
     authorization: str = Header(default=None),
