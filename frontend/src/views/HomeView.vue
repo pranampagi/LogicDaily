@@ -55,7 +55,7 @@ export default {
     await this.mainStore.fetchDailyQuestion()
   },
   watch: {
-    isAuthenticated(newVal) {
+    isAuthenticated() {
       this.localSelectedAnswer = null
     }
   },
