@@ -2,6 +2,7 @@ import os
 import time
 import logging
 from typing import Optional
+from config import settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("LogicDailyCache")
@@ -88,7 +89,7 @@ def get_cache_client():
     """
     import redis
 
-    redis_url = os.getenv("REDIS_URL")
+    redis_url = settings.REDIS_URL
     if not redis_url:
         logger.warning("REDIS_URL environment variable is not set. Falling back to In-Memory Cache.")
         return InMemoryCache()

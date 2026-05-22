@@ -1,11 +1,10 @@
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
-
-# Default to local SQLite database, extensible to PostgreSQL via env vars later
-DATABASE_URL = os.getenv("DATABASE_URL")
+from config import settings
 
 # Normalize legacy postgres:// to postgresql:// (common in PaaS like Vercel/Heroku)
+DATABASE_URL = settings.DATABASE_URL
 if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
@@ -21,10 +20,10 @@ if DATABASE_URL.startswith("sqlite"):
 # Production PostgreSQL pooling configurations
 if DATABASE_URL.startswith("postgresql"):
     engine_kwargs.update({
-        "pool_size": int(os.getenv("DB_POOL_SIZE", 5)),
-        "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", 10)),
-        "pool_timeout": int(os.getenv("DB_POOL_TIMEOUT", 30)),
-        "pool_recycle": int(os.getenv("DB_POOL_RECYCLE", 1800)),
+        "pool_size": settings.DB_POOL_SIZE,
+        "max_overflow": settings.DB_MAX_OVERFLOW,
+        "pool_timeout": settings.DB_POOL_TIMEOUT,
+        "pool_recycle": settings.DB_POOL_RECYCLE,
     })
 
 engine = create_engine(DATABASE_URL, **engine_kwargs)

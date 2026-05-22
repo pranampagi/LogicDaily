@@ -5,6 +5,7 @@ import logging
 from fastapi import APIRouter, Header, HTTPException, status, BackgroundTasks, Depends
 from database import SessionLocal
 from cache import get_cache
+from config import settings
 import models
 import schemas
 
@@ -80,7 +81,7 @@ def trigger_rotation(
     Protected by checking the Authorization Bearer token header.
     Matches the CRON_KEY environment variable.
     """
-    cron_key = os.getenv("CRON_KEY", "dev_cron_key")
+    cron_key = settings.CRON_KEY
     expected_auth = f"Bearer {cron_key}"
 
     if not authorization or authorization != expected_auth:
