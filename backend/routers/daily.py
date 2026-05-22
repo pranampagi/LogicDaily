@@ -26,7 +26,7 @@ def get_daily_question(response: Response, db: Session = Depends(get_db), cache_
     # 0. Check if physical SQLite database file exists on disk (if using SQLite)
     from database import DATABASE_URL
     import os
-    if DATABASE_URL.startswith("sqlite:///"):
+    if DATABASE_URL.startswith("sqlite:///") and DATABASE_URL != "sqlite:///:memory:":
         db_path = DATABASE_URL.replace("sqlite:///", "")
         if not os.path.exists(db_path):
             try:
