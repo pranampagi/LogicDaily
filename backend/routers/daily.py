@@ -83,7 +83,8 @@ def get_daily_question(response: Response, db: Session = Depends(get_db), cache_
         
         # Activate the selected fallback question
         db_question.is_active = True
-        db_question.activated_at = datetime.datetime.utcnow()
+        # Use timezone-aware UTC datetime
+        db_question.activated_at = datetime.datetime.now(datetime.UTC)
         db.commit()
         db.refresh(db_question)
 

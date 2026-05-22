@@ -52,7 +52,7 @@ def rotate_daily_challenge(cache_client):
             # We don't delete, we just toggle is_active = False
         
         next_active.is_active = True
-        next_active.activated_at = datetime.datetime.utcnow()
+        next_active.activated_at = datetime.datetime.now(datetime.UTC)
         db.commit()
         db.refresh(next_active)
         logger.info(f"Successfully rotated daily question to ID {next_active.id}: '{next_active.title}'")

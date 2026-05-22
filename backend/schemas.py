@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 # ==========================================
 # User Schemas
@@ -21,8 +21,7 @@ class UserResponse(UserBase):
     id: int
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ==========================================
@@ -66,8 +65,7 @@ class QuestionResponse(QuestionBase):
     activated_at: Optional[datetime] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ==========================================
@@ -86,5 +84,4 @@ class SubmissionResponse(SubmissionBase):
     is_correct: bool
     submitted_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

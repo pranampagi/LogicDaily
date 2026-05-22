@@ -13,7 +13,7 @@ class User(Base):
     username = Column(String, unique=True, index=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.UTC), nullable=False)
 
     # Relationships
     submissions = relationship("Submission", back_populates="user", cascade="all, delete-orphan")
@@ -35,7 +35,7 @@ class Question(Base):
     correct_answer = Column(String, nullable=False)  # The raw string of the correct choice
     is_active = Column(Boolean, default=False, nullable=False, index=True)  # If it is the daily active challenge
     activated_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.UTC), nullable=False)
 
     # Relationships
     submissions = relationship("Submission", back_populates="question", cascade="all, delete-orphan")
@@ -52,7 +52,7 @@ class Submission(Base):
     question_id = Column(Integer, ForeignKey("questions.id", ondelete="CASCADE"), nullable=False, index=True)
     submitted_answer = Column(String, nullable=False)
     is_correct = Column(Boolean, nullable=False, index=True)
-    submitted_at = Column(DateTime, default=datetime.datetime.utcnow, nullable=False)
+    submitted_at = Column(DateTime, default=lambda: datetime.datetime.now(datetime.UTC), nullable=False)
 
     # Relationships
     user = relationship("User", back_populates="submissions")
