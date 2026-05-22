@@ -99,7 +99,11 @@ Ensure you have the following installed:
 
 To run the test suite, ensure your virtual environment is active and execute:
 ```bash
-pytest backend/
+PYTHONPATH=backend pytest backend/tests/
+```
+For frontend linting:
+```bash
+cd frontend && npm run lint
 ```
 
 ---
